@@ -6,22 +6,28 @@
     <title>종로 08번 근무현황표 생성기</title>
     <style>
         body {
-            font-family: Arial, sans-serif; margin: 10px;
+            font-family: Arial, sans-serif;
+            margin: 10px;
             background-color: #f4f4f4; color: #333;
+            font-size: 12pt;
         }
         .controls {
-            background-color: #fff; padding: 15px; border-radius: 8px;
+            background-color: #fff;
+            padding: 15px; border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); margin-bottom: 15px;
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+            display: flex; flex-wrap: wrap; gap: 10px;
+            align-items: center;
         }
         .controls label { font-weight: bold; margin-right: 5px; }
         .controls input[type="number"], .controls select {
-            padding: 6px; border: 1px solid #ddd; border-radius: 4px;
+            padding: 6px;
+            border: 1px solid #ddd; border-radius: 4px;
             width: 70px; box-sizing: border-box;
         }
         .controls input[type="radio"] { margin-left: 10px; }
         .controls button, .controls a.button-link {
-            padding: 8px 15px; color: white; border: none; border-radius: 4px;
+            padding: 8px 15px;
+            color: white; border: none; border-radius: 4px;
             cursor: pointer; font-size: 15px; margin-right: 8px;
             text-decoration: none; display: inline-block; text-align: center; white-space: nowrap;
         }
@@ -31,58 +37,103 @@
         .controls a.button-link:hover { background-color: #138496; }
         .controls button.btn-danger { background-color: #dc3545; }
         .controls button.btn-danger:hover { background-color: #c82333; }
-
+        
         #scheduleContainer {
-            background-color: white; padding: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            padding: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin: 20px auto; max-width: 95%; overflow-x: auto;
         }
         table {
-            width: 100%; min-width: 1200px; border-collapse: collapse;
+            width: 100%;
+            min-width: 1200px; border-collapse: collapse;
             margin: 0 auto; font-size: 0.9em; background-color: #fff; table-layout: fixed;
         }
         th, td {
-            border: 1px solid #ddd; padding: 6px; text-align: center;
+            border: 1px solid #ddd;
+            padding: 6px; text-align: center;
             vertical-align: top; line-height: 1.1; word-break: keep-all;
             height: 38px; box-sizing: border-box;
+            font-size: 12pt;
         }
         th { background-color: #f2f2f2; font-weight: bold; }
         caption {
-            font-size: 1.2em; margin-bottom: 10px; font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px; font-weight: bold;
             color: #333; text-decoration: underline;
         }
         .sunday { background-color: #ffe0e0; }
         .saturday { background-color: #e0e0ff; }
         .holiday { background-color: #ffcccc; font-weight: bold; color: #cc0000; }
         .edit-mode {
-            position: relative; padding: 2px; display: flex; flex-direction: column;
+            position: relative;
+            padding: 2px; display: flex; flex-direction: column;
             justify-content: center; height: 100%;
         }
         .edit-mode input {
-            width: calc(100% - 8px); margin-bottom: 2px;
+            width: calc(100% - 8px);
+            margin-bottom: 2px;
             padding: 2px; box-sizing: border-box;
         }
-        .edit-mode .cell-buttons { display: flex; justify-content: space-around; margin-top: 2px; }
+        .edit-mode .cell-buttons { display: flex;
+            justify-content: space-around; margin-top: 2px; }
         .edit-mode .cell-buttons button {
-            padding: 3px 5px; font-size: 0.7em; color: white; border: none;
+            padding: 3px 5px;
+            font-size: 0.7em; color: white; border: none;
             border-radius: 3px; cursor: pointer; white-space: nowrap;
         }
         .edit-mode .cell-buttons button.btn-fixed { background-color: #28a745; }
         .edit-mode .cell-buttons button.btn-temp { background-color: #ffc107; }
+        .edit-mode .cell-buttons button.btn-highlight-am { background-color: #ff8c00; }
+        .edit-mode .cell-buttons button.btn-highlight-pm { background-color: #ff8c00; }
+        .edit-mode button:disabled { cursor: not-allowed; opacity: 0.6; }
         .edit-mode .cell-buttons button.btn-delete { background-color: #dc3545; }
-        .edit-mode .cell-buttons .btn-highlight-am { background-color: #ff8c00; }
-        .edit-mode .cell-buttons .btn-highlight-pm { background-color: #ff8c00; }
-        .edit-mode input[data-bold="true"] { font-weight: bold; }
 
         .name-entry { display: block; margin-top: 2px; margin-bottom: 2px; }
         .name-entry.bold-name { font-weight: bold; }
-
+        /* 수정된 부분 */
+        .hidden-x {
+            color: white; /* 텍스트를 흰색으로 만들어 배경색과 동일하게 만듭니다. */
+        }
+        /* ----------- */
         table th:nth-child(1),
         table td:nth-child(1),
         table th:nth-child(2),
         table td:nth-child(2) {
-            width: 2%;
-            min-width: 30px;
+            width: 4%;
+            min-width: 60px;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px; border-radius: 10px;
+            max-width: 90%; max-height: 90%; overflow-y: auto;
+            position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .modal-content h3 { margin-top: 0; }
+        .close-button {
+            position: absolute;
+            right: 10px; top: 5px;
+            font-size: 25px; font-weight: bold;
+            color: #aaa; cursor: pointer;
+        }
+        .count-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .count-table th, .count-table td {
+            border: 1px solid #ddd;
+            padding: 8px; text-align: center;
+        }
+        .count-table th { background-color: #f2f2f2; }
         
         @media print {
             @page {
@@ -90,7 +141,8 @@
                 margin: 10mm;
             }
             body {
-                background-color: white; margin: 0; padding: 0;
+                background-color: white;
+                margin: 0; padding: 0;
                 -webkit-print-color-adjust: exact;
             }
             .controls { display: none; }
@@ -102,18 +154,35 @@
                 border: 1px solid #000;
                 table-layout: fixed;
             }
-            th, td { padding: 1px; height: auto; word-break: break-all; }
+            th, td { padding: 1px; height: auto;
+                word-break: break-all; }
 
             table th:nth-child(1),
             table td:nth-child(1),
             table th:nth-child(2),
             table td:nth-child(2) {
-                width: 2%;
+                width: 4%;
             }
+            .modal-content {
+                position: static;
+                width: 100%;
+                max-width: none;
+                max-height: none;
+                box-shadow: none;
+                overflow-y: visible;
+            }
+            .modal {
+                display: flex;
+                position: static;
+                background-color: transparent;
+            }
+            .modal .close-button { display: none; }
         }
         @media screen and (max-width: 768px) {
-            .controls { flex-direction: column; align-items: stretch; }
-            .controls input[type="number"], .controls select, .controls button, .controls a.button-link { width: 100%; box-sizing: border-box; margin: 5px 0; }
+            .controls { flex-direction: column;
+                align-items: stretch; }
+            .controls input[type="number"], .controls select, .controls button, .controls a.button-link { width: 100%;
+                box-sizing: border-box; margin: 5px 0; }
             #scheduleContainer { padding: 5px; }
             table { font-size: 0.8em; }
             th, td { padding: 4px; }
@@ -127,37 +196,48 @@
         <label for="monthInput">월:</label>
         <input type="number" id="monthInput" value="9">
         
-        <input type="radio" id="option1" name="displayOption" value="1" checked>
+        <input type="radio" id="option1" name="displayOption" value="1">
         <label for="option1">1일 ~ 15일</label>
-        <input type="radio" id="option2" name="displayOption" value="2">
+        <input type="radio" id="option2" name="displayOption" value="2" checked>
         <label for="option2">16일 ~ 말일</label>
         
         <button onclick="generateSchedule()">생성</button>
+        <button onclick="calculateWorkdays()">08번 근무일수계산</button>
         <button onclick="printPage()">인쇄</button>
         <button class="btn-danger" onclick="resetAllFixedSchedules()">전체 고정 초기화</button>
+        <a href="https://waryong2025.github.io/townbus/" class="button-link" target="_blank">08번 배차표</a>
         <a href="https://waryong2025.github.io/timeman/" class="button-link" target="_blank">07번 배차표</a>
-        <a href="https://waryong2025.github.io/townbus/" class="button-link" target="_blank">08번배차표</a>
+        <a href="https://waryong2025.github.io/time" class="button-link" target="_blank">07번 근무현황생성</a>
     </div>
     <div id="scheduleContainer">
         <table>
-            <caption id="tableCaption">종로 08번 2025년 9월 1일 ~ 15일까지 근무현황표</caption>
+            <caption id="tableCaption">종로 08번 2025년 9월 16일 ~ 30일까지 근무현황표</caption>
             <thead id="scheduleHeader">
             </thead>
             <tbody id="scheduleBody">
             </tbody>
         </table>
     </div>
+
+    <div id="workdayModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle"></h3>
+            <div id="modalTableContainer"></div>
+        </div>
+    </div>
+
     <script>
         const VEHICLE_COLUMNS = ['3611호', '5510호', '3615호', '스피아', '3612호', '6201호', '5504호', '5535호', '5536호', '3614호', '비고'];
+
         const STORAGE_KEY_FIXED = 'jongro08FixedSchedule';
         const STORAGE_KEY_TEMP = 'jongro08TempSchedule';
 
-        // 두 개의 다른 저장 공간 사용: 고정 규칙은 날짜-요일 규칙으로, 임시 규칙은 특정 날짜의 데이터로
         let fixedScheduleData = JSON.parse(localStorage.getItem(STORAGE_KEY_FIXED)) || {};
         let tempScheduleData = JSON.parse(localStorage.getItem(STORAGE_KEY_TEMP)) || {};
         
         let scheduleData = {};
-
+        
         function getDayName(dayOfWeek) {
             const days = ['일', '월', '화', '수', '목', '금', '토'];
             return days[dayOfWeek];
@@ -166,7 +246,7 @@
         function isPublicHoliday(date) {
             const year = date.getFullYear();
             const month = date.getMonth() + 1;
-            const day = date = date.getDate();
+            const day = date.getDate();
             const holidays = [
                 // { month: 1, day: 1, name: '신정' },
                 // { month: 3, day: 1, name: '삼일절' },
@@ -176,9 +256,12 @@
 
         function renderCellContent(names) {
             if (!names || names.length === 0) return '';
-            return names.map(item =>
-                `<span class="name-entry ${item.bold ? 'bold-name' : ''}">${item.text}</span>`
-            ).join('');
+            return names.map(item => {
+                const text = item.text.trim();
+                const display = text === '' ? 'X' : text;
+                const hiddenClass = text === '' ? ' hidden-x' : '';
+                return `<span class="name-entry${hiddenClass} ${item.bold ? 'bold-name' : ''}">${display}</span>`;
+            }).join('');
         }
         
         function editCell(cell, colId, dateString, dayOfWeek) {
@@ -190,10 +273,10 @@
                 editCell.classList.remove('edit-mode');
                 editCell.innerHTML = renderCellContent(originalNames);
             });
-
             const currentNames = (scheduleData[dateString] && scheduleData[dateString][colId]) || [{ text: '', bold: false }, { text: '', bold: false }];
             const morningValue = currentNames[0] ? currentNames[0].text : '';
             const afternoonValue = currentNames[1] ? currentNames[1].text : '';
+            const isSunday3614 = (colId === '3614호' && dayOfWeek === 0);
 
             cell.classList.add('edit-mode');
             cell.dataset.colId = colId;
@@ -203,7 +286,7 @@
                 <input type="text" class="morning-input" value="${morningValue}" placeholder="오전" data-bold="${currentNames[0].bold}">
                 <input type="text" class="afternoon-input" value="${afternoonValue}" placeholder="오후" data-bold="${currentNames[1].bold}">
                 <div class="cell-buttons">
-                    <button class="btn-fixed" onclick="saveFixedCell(this.parentNode.parentNode)">고정</button>
+                    <button class="btn-fixed" onclick="saveFixedCell(this.parentNode.parentNode)" ${isSunday3614 ? 'disabled title="일요일은 고정 저장이 불가능합니다."' : ''}>고정</button>
                     <button class="btn-temp" onclick="saveTempCell(this.parentNode.parentNode)">임시</button>
                     <button class="btn-highlight-am" onclick="highlightCell(this.parentNode.parentNode, 'am')">오전 강조</button>
                     <button class="btn-highlight-pm" onclick="highlightCell(this.parentNode.parentNode, 'pm')">오후 강조</button>
@@ -247,20 +330,54 @@
             const { colId, dayOfWeek, dateString } = cellElement.dataset;
             const namesToSave = getNamesAndBoldStateFromCell(cellElement);
 
-            const recurringKey = `${dayOfWeek}-${colId}`;
-            if (!fixedScheduleData[recurringKey]) {
-                fixedScheduleData[recurringKey] = [];
+            if (colId === '3614호' && dayOfWeek === '0') {
+                alert('일요일은 휴무이므로 저장할 수 없습니다.');
+                return;
             }
-
-            fixedScheduleData[recurringKey] = fixedScheduleData[recurringKey].filter(
+            
+            // 현재 날짜 고정 저장
+            const currentRecurringKey = `${dayOfWeek}-${colId}`;
+            if (!fixedScheduleData[currentRecurringKey]) {
+                fixedScheduleData[currentRecurringKey] = [];
+            }
+            fixedScheduleData[currentRecurringKey] = fixedScheduleData[currentRecurringKey].filter(
                 entry => entry.dateString !== dateString
             );
-
-            fixedScheduleData[recurringKey].push({
+            fixedScheduleData[currentRecurringKey].push({
                 dateString: dateString,
                 names: namesToSave
             });
-            fixedScheduleData[recurringKey].sort((a, b) => new Date(b.dateString) - new Date(a.dateString));
+
+            // 3614호 근무 로테이션 추가
+            if (colId === '3614호' && dayOfWeek !== '0') { // 일요일 제외
+                const nextWeekDate = new Date(dateString);
+                nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+                const nextWeekDateString = nextWeekDate.toISOString().slice(0, 10);
+                const nextWeekDayOfWeek = nextWeekDate.getDay();
+
+                const rotatedNames = [
+                    namesToSave[1], // 오후 근무자가 다음 주 오전 근무자로
+                    namesToSave[0]  // 오전 근무자가 다음 주 오후 근무자로
+                ];
+
+                const nextWeekRecurringKey = `${nextWeekDayOfWeek}-${colId}`;
+                if (!fixedScheduleData[nextWeekRecurringKey]) {
+                    fixedScheduleData[nextWeekRecurringKey] = [];
+                }
+                fixedScheduleData[nextWeekRecurringKey] = fixedScheduleData[nextWeekRecurringKey].filter(
+                    entry => entry.dateString !== nextWeekDateString
+                );
+                fixedScheduleData[nextWeekRecurringKey].push({
+                    dateString: nextWeekDateString,
+                    names: rotatedNames
+                });
+            }
+
+
+            // 가장 최근 날짜 순으로 정렬
+            for (const key in fixedScheduleData) {
+                fixedScheduleData[key].sort((a, b) => new Date(b.dateString) - new Date(a.dateString));
+            }
 
             localStorage.setItem(STORAGE_KEY_FIXED, JSON.stringify(fixedScheduleData));
             generateSchedule();
@@ -305,17 +422,22 @@
             
             generateSchedule();
         }
-
+        
         function resetAllFixedSchedules() {
-            if (confirm("저장된 모든 고정 근무표를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-                fixedScheduleData = {};
-                localStorage.removeItem(STORAGE_KEY_FIXED);
-                if (confirm("임시 근무표도 함께 초기화하시겠습니까?")) {
-                    tempScheduleData = {};
-                    localStorage.removeItem(STORAGE_KEY_TEMP);
+            const password = prompt("저장된 모든 고정 근무표를 삭제하시려면 비밀번호를 입력하세요.");
+            if (password === "201023") {
+                if (confirm("모든 고정 근무표를 삭제합니다. 계속하시겠습니까?")) {
+                    fixedScheduleData = {};
+                    localStorage.removeItem(STORAGE_KEY_FIXED);
+                    if (confirm("임시 근무표도 함께 초기화하시겠습니까?")) {
+                        tempScheduleData = {};
+                        localStorage.removeItem(STORAGE_KEY_TEMP);
+                    }
+                    generateSchedule();
+                    alert("모든 근무표가 초기화되었습니다.");
                 }
-                generateSchedule();
-                alert("모든 근무표가 초기화되었습니다.");
+            } else {
+                alert("비밀번호 확인 후 신청하세요.");
             }
         }
 
@@ -327,33 +449,28 @@
             const scheduleHeader = document.getElementById('scheduleHeader');
             const scheduleBody = document.getElementById('scheduleBody');
             const tableCaption = document.getElementById('tableCaption');
+            const headerHTML = `<tr><th style="width: 4%;">월일</th><th style="width: 4%;">요일</th>${VEHICLE_COLUMNS.map(c => `<th>${c}</th>`).join('')}</tr>`;
+            scheduleHeader.innerHTML = headerHTML;
+            scheduleBody.innerHTML = '';
+            
+            const startDate = new Date(year, month - 1, selectedOption === '1' ? 1 : 16);
+            const endDate = (selectedOption === '1') ? new Date(year, month - 1, 15) : new Date(year, month, 0);
+            
+            tableCaption.textContent = `종로 08번 ${year}년 ${month}월 ${startDate.getDate()}일 ~ ${endDate.getDate()}일까지 근무현황표`;
             
             scheduleData = {};
 
-            const headerHTML = `<tr><th style="width: 2%;">월일</th><th style="width: 2%;">요일</th>${VEHICLE_COLUMNS.map(c => `<th>${c}</th>`).join('')}</tr>`;
-            scheduleHeader.innerHTML = headerHTML;
-            scheduleBody.innerHTML = '';
-
-            const startDate = new Date(year, month - 1, selectedOption === '1' ? 1 : 16);
-            const endDate = (selectedOption === '1')
-                ? new Date(year, month - 1, 15)
-                : new Date(year, month, 0);
-
-            tableCaption.textContent = `종로 08번 ${year}년 ${month}월 ${startDate.getDate()}일 ~ ${endDate.getDate()}일까지 근무현황표`;
-
             for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                const dayOfWeek = d.getDay();
                 const dateString = d.toISOString().slice(0, 10);
+                const dayOfWeek = d.getDay();
                 
                 let cellsContent = {};
                 VEHICLE_COLUMNS.forEach(colId => {
                     let appliedNames = [{ text: '', bold: false }, { text: '', bold: false }];
 
-                    // 1. 임시 데이터 먼저 확인
                     if (tempScheduleData[dateString] && tempScheduleData[dateString][colId]) {
                         appliedNames = tempScheduleData[dateString][colId];
                     }
-                    // 2. 임시 데이터가 없으면 고정 규칙 확인
                     else {
                         const recurringKey = `${dayOfWeek}-${colId}`;
                         if (fixedScheduleData[recurringKey]) {
@@ -378,7 +495,6 @@
                 const dataCellsHTML = VEHICLE_COLUMNS.map(colId =>
                     `<td onclick="editCell(this, '${colId}', '${dateString}', ${dayOfWeek})">${renderCellContent(cellsContent[colId])}</td>`
                 ).join('');
-
                 scheduleBody.insertAdjacentHTML('beforeend', `
                     <tr class="${rowClass}">
                         <td>${d.getDate()}</td>
@@ -386,6 +502,59 @@
                         ${dataCellsHTML}
                     </tr>`);
             }
+        }
+
+        function calculateWorkdays() {
+            const workdayCounts = {};
+            const allNames = new Set();
+            
+            // 모든 근무자 이름 수집
+            for (const dateString in scheduleData) {
+                for (const colId in scheduleData[dateString]) {
+                    if (colId !== '비고') {
+                        scheduleData[dateString][colId].forEach(item => {
+                            if (item.text.trim() !== '') {
+                                allNames.add(item.text.trim());
+                            }
+                        });
+                    }
+                }
+            }
+
+            // 이름별 근무일수 초기화
+            allNames.forEach(name => {
+                workdayCounts[name] = 0;
+            });
+            
+            // 근무일수 계산
+            for (const dateString in scheduleData) {
+                for (const colId in scheduleData[dateString]) {
+                    if (colId !== '비고') {
+                        scheduleData[dateString][colId].forEach(item => {
+                            if (item.text.trim() !== '' && workdayCounts.hasOwnProperty(item.text.trim())) {
+                                workdayCounts[item.text.trim()]++;
+                            }
+                        });
+                    }
+                }
+            }
+            
+            // 결과 정렬
+            const sortedCounts = Object.entries(workdayCounts).sort((a, b) => b[1] - a[1]);
+
+            // 모달에 결과 표시
+            const modalTitle = document.getElementById('modalTitle');
+            const modalTableContainer = document.getElementById('modalTableContainer');
+            modalTitle.textContent = `${document.getElementById('tableCaption').textContent.replace('근무현황표', '근무일수')}`;
+            
+            let tableHTML = `<table class="count-table"><thead><tr><th>이름</th><th>근무일수</th></tr></thead><tbody>`;
+            sortedCounts.forEach(([name, count]) => {
+                tableHTML += `<tr><td>${name}</td><td>${count}일</td></tr>`;
+            });
+            tableHTML += `</tbody></table>`;
+            
+            modalTableContainer.innerHTML = tableHTML;
+            document.getElementById('workdayModal').style.display = 'flex';
         }
 
         function printPage() {
@@ -396,6 +565,10 @@
                 cell.innerHTML = renderCellContent(originalNames);
             });
             window.print();
+        }
+
+        function closeModal() {
+            document.getElementById('workdayModal').style.display = 'none';
         }
         
         document.addEventListener('DOMContentLoaded', () => {
