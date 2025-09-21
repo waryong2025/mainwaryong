@@ -31,6 +31,10 @@
         .controls a.button-link:hover { background-color: #138496; }
         .controls button.btn-danger { background-color: #dc3545; }
         .controls button.btn-danger:hover { background-color: #c82333; }
+        .controls a.btn-create-schedule { background-color: #28a745; }
+        .controls a.btn-create-schedule:hover { background-color: #218838; }
+        .controls button.btn-view-list { background-color: #6c757d; }
+        .controls button.btn-view-list:hover { background-color: #5a6268; }
 
         #scheduleContainer {
             background-color: white; padding: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -84,6 +88,59 @@
             min-width: 30px;
         }
         
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #workerList {
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+        #workerList h3 {
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        #workerList ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #workerList li {
+            padding: 5px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
         @media print {
             @page {
                 size: A4;
@@ -110,6 +167,7 @@
             table td:nth-child(2) {
                 width: 2%;
             }
+            .modal { display: none; }
         }
         @media screen and (max-width: 768px) {
             .controls { flex-direction: column; align-items: stretch; }
@@ -135,8 +193,10 @@
         <button onclick="generateSchedule()">생성</button>
         <button onclick="printPage()">인쇄</button>
         <button class="btn-danger" onclick="resetAllFixedSchedules()">전체 고정 초기화</button>
-        <a href="https://waryong2025.github.io/timeman/" class="button-link" target="_blank">07번 배차표</a>
         <a href="https://waryong2025.github.io/townbus/" class="button-link" target="_blank">08번배차표</a>
+        <a href="https://waryong2025.github.io/timeman/" class="button-link" target="_blank">07번 배차표</a>
+        <a href="https://waryong2025.github.io/mainwaryong" class="button-link btn-create-schedule" target="_blank">08번 근무현황생성</a>
+        <button class="btn-view-list" onclick="showWorkerList()">근무자별 명단</button>
     </div>
     <div id="scheduleContainer">
         <table>
@@ -147,12 +207,20 @@
             </tbody>
         </table>
     </div>
+    
+    <div id="workerListModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">근무자별 명단</h2>
+            <div id="workerList"></div>
+        </div>
+    </div>
+
     <script>
         const VEHICLE_COLUMNS = ['3611호', '5510호', '3615호', '스피아', '3612호', '6201호', '5504호', '5535호', '5536호', '3614호', '비고'];
         const STORAGE_KEY_FIXED = 'jongro08FixedSchedule';
         const STORAGE_KEY_TEMP = 'jongro08TempSchedule';
 
-        // 두 개의 다른 저장 공간 사용: 고정 규칙은 날짜-요일 규칙으로, 임시 규칙은 특정 날짜의 데이터로
         let fixedScheduleData = JSON.parse(localStorage.getItem(STORAGE_KEY_FIXED)) || {};
         let tempScheduleData = JSON.parse(localStorage.getItem(STORAGE_KEY_TEMP)) || {};
         
@@ -283,7 +351,6 @@
             const { colId, dayOfWeek, dateString } = cellElement.dataset;
             const recurringKey = `${dayOfWeek}-${colId}`;
 
-            // 고정 스케줄에서 삭제
             if (fixedScheduleData[recurringKey]) {
                 fixedScheduleData[recurringKey] = fixedScheduleData[recurringKey].filter(
                     entry => entry.dateString !== dateString
@@ -294,7 +361,6 @@
                 localStorage.setItem(STORAGE_KEY_FIXED, JSON.stringify(fixedScheduleData));
             }
 
-            // 임시 스케줄에서 삭제
             if (tempScheduleData[dateString] && tempScheduleData[dateString][colId]) {
                 delete tempScheduleData[dateString][colId];
                 if (Object.keys(tempScheduleData[dateString]).length === 0) {
@@ -349,12 +415,9 @@
                 VEHICLE_COLUMNS.forEach(colId => {
                     let appliedNames = [{ text: '', bold: false }, { text: '', bold: false }];
 
-                    // 1. 임시 데이터 먼저 확인
                     if (tempScheduleData[dateString] && tempScheduleData[dateString][colId]) {
                         appliedNames = tempScheduleData[dateString][colId];
-                    }
-                    // 2. 임시 데이터가 없으면 고정 규칙 확인
-                    else {
+                    } else {
                         const recurringKey = `${dayOfWeek}-${colId}`;
                         if (fixedScheduleData[recurringKey]) {
                             for (const entry of fixedScheduleData[recurringKey]) {
@@ -397,7 +460,90 @@
             });
             window.print();
         }
-        
+
+        function showWorkerList() {
+            generateWorkerList();
+            document.getElementById('workerListModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('workerListModal').style.display = 'none';
+        }
+
+        function generateWorkerList() {
+            const year = parseInt(document.getElementById('yearInput').value);
+            const month = parseInt(document.getElementById('monthInput').value);
+            const selectedOption = document.querySelector('input[name="displayOption"]:checked').value;
+            const startDate = new Date(year, month - 1, selectedOption === '1' ? 1 : 16);
+            const endDate = (selectedOption === '1')
+                ? new Date(year, month - 1, 15)
+                : new Date(year, month, 0);
+            
+            const workerCounts = {};
+            const workerDays = {};
+
+            const dateRange = [];
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                dateRange.push(d.toISOString().slice(0, 10));
+            }
+
+            dateRange.forEach(dateString => {
+                const dayData = scheduleData[dateString];
+                if (dayData) {
+                    VEHICLE_COLUMNS.forEach(colId => {
+                        const cellNames = dayData[colId];
+                        if (cellNames) {
+                            if (cellNames[0] && cellNames[0].text.trim()) {
+                                const name = cellNames[0].text.trim();
+                                if (!workerCounts[name]) {
+                                    workerCounts[name] = { total: 0, morning: 0, afternoon: 0 };
+                                    workerDays[name] = { morning: [], afternoon: [] };
+                                }
+                                workerCounts[name].total++;
+                                workerCounts[name].morning++;
+                                workerDays[name].morning.push(dateString.slice(8, 10));
+                            }
+                            if (cellNames[1] && cellNames[1].text.trim()) {
+                                const name = cellNames[1].text.trim();
+                                if (!workerCounts[name]) {
+                                    workerCounts[name] = { total: 0, morning: 0, afternoon: 0 };
+                                    workerDays[name] = { morning: [], afternoon: [] };
+                                }
+                                workerCounts[name].total++;
+                                workerCounts[name].afternoon++;
+                                workerDays[name].afternoon.push(dateString.slice(8, 10));
+                            }
+                        }
+                    });
+                }
+            });
+
+            const workerListDiv = document.getElementById('workerList');
+            let html = '';
+            
+            const sortedWorkers = Object.keys(workerCounts).sort((a, b) => {
+                return workerCounts[b].total - workerCounts[a].total;
+            });
+
+            if (sortedWorkers.length === 0) {
+                html = '<p>근무 현황이 없습니다.</p>';
+            } else {
+                sortedWorkers.forEach(name => {
+                    const counts = workerCounts[name];
+                    const days = workerDays[name];
+                    html += `
+                        <h3>${name} (${counts.total}일)</h3>
+                        <ul>
+                            <li><strong>오전:</strong> ${counts.morning}일 (${days.morning.join(', ')})</li>
+                            <li><strong>오후:</strong> ${counts.afternoon}일 (${days.afternoon.join(', ')})</li>
+                        </ul>
+                    `;
+                });
+            }
+            
+            workerListDiv.innerHTML = html;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
             document.getElementById('yearInput').value = today.getFullYear();
@@ -410,6 +556,13 @@
             }
             generateSchedule();
         });
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('workerListModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
     </script>
 </body>
 </html>
