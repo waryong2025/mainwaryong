@@ -45,6 +45,14 @@
         }
         .controls button.btn-danger:hover { background-color: #c82333;
         }
+
+        /* ✅ 근무백업데이타 버튼 스타일 (녹색 계열 추가) */
+        .controls button.btn-backup { 
+            background-color: #28a745; /* 밝은 녹색 */
+        }
+        .controls button.btn-backup:hover { 
+            background-color: #1e7e34; /* 어두운 녹색 */
+        }
         
         #scheduleContainer {
             background-color: white;
@@ -236,7 +244,7 @@
         <button onclick="printPage()">인쇄</button>
         <button class="btn-danger" onclick="resetAllFixedSchedules()">전체 고정 초기화</button>
         <a href="https://waryong2025.github.io/testtime/" class="button-link" target="_blank">3-2번 근무현황표</a>
-    
+        <button class="btn-backup" onclick="backupScheduleData()">3-1번근무백업데이타</button>
     </div>
     <div id="scheduleContainer">
         <table>
@@ -479,6 +487,47 @@
             } else {
                 alert("비밀번호 확인 후 신청하세요.");
             }
+        }
+
+        /**
+         * 로컬스토리지의 근무 데이터를 JSON 파일로 다운로드하는 함수 (키값 포함)
+         */
+        function backupScheduleData() {
+            const fixedData = localStorage.getItem(STORAGE_KEY_FIXED);
+            const tempData = localStorage.getItem(STORAGE_KEY_TEMP);
+
+            const backupData = {
+                [STORAGE_KEY_FIXED]: fixedData ? JSON.parse(fixedData) : {},
+                [STORAGE_KEY_TEMP]: tempData ? JSON.parse(tempData) : {}
+            };
+            
+            // JSON.stringify로 데이터를 보기 좋게 포맷팅 (들여쓰기 4칸)
+            const jsonString = JSON.stringify(backupData, null, 4);
+
+            // 파일명에 현재 시각을 포함하여 저장
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            // 키값(로컬스토리지 키)을 포함한 파일명 구조: naksanjongro3-1_backup_20251006_193642.txt
+            const filename = `naksanjongro3-1_backup_${year}${month}${day}_${hours}${minutes}${seconds}.txt`;
+
+            // Blob 객체를 생성하여 데이터를 파일 형태로 만듦 (텍스트 파일)
+            const blob = new Blob([jsonString], { type: 'text/plain;charset=utf-8' });
+
+            // 다운로드 링크 생성 및 자동 클릭
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename; // 파일명 지정
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            alert(`근무 백업 데이터가 '${filename}'으로 저장되었습니다.`);
         }
 
         function generateSchedule() {
