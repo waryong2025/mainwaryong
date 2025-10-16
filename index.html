@@ -297,10 +297,10 @@
 
         <select id="serviceSelect" class="service-select" onchange="navigateService()">
             <option value="">관련 서비스 이동</option>
-           <option value="https://waryong2025.github.io/townbus/">08번 배차표</option>
-            <option value="https://waryong2025.github.io/timeman/">07번 배차표</option>
-            <option value="https://waryong2025.github.io/time">07번 근무현황표</option>
-            <option value="https://waryong2025.github.io/testtime">3-2번 근무현황표</option>
+            <option value="https://waryong2025.github.io/mainwaryong" selected>3-1번 근무현황표</option>
+            <option value="https://naksan2025.github.io/mainnaksan">3-2번 근무현황표</option>
+            <option value="https://naksan2025.github.io/mainnaksan07">종로07번 근무현황표</option>
+            <option value="https://naksan2025.github.io/mainnaksan08">종로08번 근무현황표</option>
         </select>
     </div>
     <div id="scheduleContainer">
@@ -322,7 +322,11 @@
     </div>
 
     <script>
-        const VEHICLE_COLUMNS = ['3614', '5941', '3270', '5943', '5942', '비고'];
+        // 🚨 수정된 부분: 로테이션 차량 4대 (3614, 3270, 5943, 5942) 삭제
+        const VEHICLE_COLUMNS = ['3214', '3215', '3326', '3327', '5941', '5903', '비고'];
+        // 🚨 수정된 부분: 로테이션 관련 상수 삭제
+        // const ROTATION_VEHICLES = { '3614': '5941', '5941': '3270', '3270': '5943', '5943': '5942', '5942': '3614' };
+        
         const STORAGE_KEY_FIXED = 'naksanjongro3-1FixedSchedule';
         const STORAGE_KEY_TEMP = 'naksanjongro3-1TempSchedule';
 
@@ -330,8 +334,6 @@
         let tempScheduleData = JSON.parse(localStorage.getItem(STORAGE_KEY_TEMP)) || {};
         let scheduleData = {};
         
-        // ... (getDayName, isPublicHoliday, renderCellContent, editCell, getNamesAndBoldStateFromCell, highlightCell, saveFixedCell, saveTempCell, deleteCell, resetAllFixedSchedules, getScheduleForDay, generateSchedule, calculateWorkdays 함수는 내용 변경 없음) ...
-
         function getDayName(dayOfWeek) {
             const days = ['일', '월', '화', '수', '목', '금', '토'];
             return days[dayOfWeek];
@@ -371,7 +373,8 @@
             const morningValue = currentNames[0] ? currentNames[0].text : '';
             const afternoonValue = currentNames[1] ? currentNames[1].text : '';
 
-            const isSunday3614 = (colId === '3614' && dayOfWeek === 0);
+            // 🚨 수정된 부분: 3614번 차량 로직 제거로 인해 일요일 휴무 로직 제거
+            const isSundayFixed = false; // 이제 일반적인 고정 저장 가능
 
             cell.classList.add('edit-mode');
             cell.dataset.colId = colId;
@@ -381,7 +384,7 @@
                 <input type="text" class="morning-input" value="${morningValue}" placeholder="오전" data-bold="${currentNames[0].bold}">
                 <input type="text" class="afternoon-input" value="${afternoonValue}" placeholder="오후" data-bold="${currentNames[1].bold}">
                 <div class="cell-buttons">
-                    <button class="btn-fixed" onclick="saveFixedCell(this.parentNode.parentNode)" ${isSunday3614 ? 'disabled title="일요일은 고정 저장이 불가능합니다."' : ''}>고정</button>
+                    <button class="btn-fixed" onclick="saveFixedCell(this.parentNode.parentNode)" ${isSundayFixed ? 'disabled title="일요일은 고정 저장이 불가능합니다."' : ''}>고정</button>
                     <button class="btn-temp" onclick="saveTempCell(this.parentNode.parentNode)">임시</button>
                     <button class="btn-highlight-am" onclick="highlightCell(this.parentNode.parentNode, 'am')">오전 강조</button>
                     <button class="btn-highlight-pm" onclick="highlightCell(this.parentNode.parentNode, 'pm')">오후 강조</button>
@@ -397,8 +400,8 @@
             const morningText = morningInput.value.trim();
             const afternoonText = afternoonInput.value.trim();
 
-            const morningBold = inputElement.dataset.bold === 'true';
-            const afternoonBold = inputElement.dataset.bold === 'true';
+            const morningBold = morningInput.dataset.bold === 'true';
+            const afternoonBold = afternoonInput.dataset.bold === 'true';
             
             return [
                 { text: morningText, bold: morningBold },
@@ -423,10 +426,8 @@
         function saveFixedCell(cellElement) {
             const { colId, dayOfWeek, dateString } = cellElement.dataset;
             const namesToSave = getNamesAndBoldStateFromCell(cellElement);
-            if (colId === '3614' && dayOfWeek === '0') {
-                alert('일요일은 휴무이므로 저장할 수 없습니다.');
-                return;
-            }
+            
+            // 🚨 수정된 부분: 3614번 일요일 휴무 로직 제거
 
             // 현재 날짜 고정 저장
             const currentRecurringKey = `${dayOfWeek}-${colId}`;
@@ -438,35 +439,7 @@
             );
             fixedScheduleData[currentRecurringKey].push({ dateString: dateString, names: namesToSave });
 
-            // 3614번 로테이션 로직 (3-1번 파일에만 해당)
-            if (colId === '3614') {
-                const nextVehicle = { '3614': '5941', '5941': '3270', '3270': '5943', '5943': '5942', '5942': '3614' };
-                let nextColId = nextVehicle[colId];
-                let nextNames = namesToSave; 
-                let nextDayOfWeek = dayOfWeek;
-                let nextDate = new Date(dateString);
-
-                for (let i = 0; i < 5; i++) {
-                    // 다음 날짜로 이동 (토/일은 건너뛰기)
-                    do {
-                        nextDate.setDate(nextDate.getDate() + 1);
-                        nextDayOfWeek = nextDate.getDay();
-                    } while (nextDayOfWeek === 0 || nextDayOfWeek === 6 || isPublicHoliday(nextDate));
-                    
-                    const nextDateString = nextDate.toISOString().slice(0, 10);
-                    const nextRecurringKey = `${nextDayOfWeek}-${nextColId}`;
-                    
-                    if (!fixedScheduleData[nextRecurringKey]) {
-                        fixedScheduleData[nextRecurringKey] = [];
-                    }
-                    fixedScheduleData[nextRecurringKey] = fixedScheduleData[nextRecurringKey].filter(
-                        entry => entry.dateString !== nextDateString
-                    );
-                    fixedScheduleData[nextRecurringKey].push({ dateString: nextDateString, names: nextNames });
-
-                    nextColId = nextVehicle[nextColId];
-                }
-            }
+            // 🚨 수정된 부분: 3614번 로테이션 로직 완전히 제거
 
             // 가장 최근 날짜 순으로 정렬
             for (const key in fixedScheduleData) {
@@ -544,6 +517,7 @@
             const dateString = currentDate.toISOString().slice(0, 10);
             const dayOfWeek = currentDate.getDay(); // 0 (일) ~ 6 (토)
             const dailySchedule = {};
+            // 🚨 수정된 부분: 로테이션 관련 차량 순서 변수 삭제
 
             VEHICLE_COLUMNS.forEach(colId => {
                 let names = null;
@@ -552,8 +526,9 @@
                 if (tempScheduleData[dateString] && tempScheduleData[dateString][colId]) {
                     names = tempScheduleData[dateString][colId];
                 } 
-                // 2. 공휴일/일요일 휴무 처리
-                else if (isPublicHoliday(currentDate) || (dayOfWeek === 0 && colId === '3614')) {
+                // 2. 공휴일 휴무 처리
+                // 🚨 수정된 부분: 3614번 일요일 휴무 로직 제거
+                else if (isPublicHoliday(currentDate)) {
                     names = [{ text: '', bold: false }, { text: '', bold: false }];
                 }
                 // 3. 고정 스케줄 데이터 확인
@@ -565,34 +540,7 @@
 
                         if (mostRecentRule) {
                             names = mostRecentRule.names;
-                            
-                            // 3614번 로테이션 로직 적용 (3-1번 파일에만 해당)
-                            if (colId !== '3614') {
-                                const baseDateString = mostRecentRule.dateString;
-                                const baseDate = new Date(baseDateString);
-                                const vehicleOrder = ['3614', '5941', '3270', '5943', '5942'];
-                                
-                                const baseIndex = vehicleOrder.indexOf(mostRecentRule.colId || colId);
-                                const currentIndex = vehicleOrder.indexOf(colId);
-
-                                // baseDate부터 currentDate까지의 평일 일수 계산
-                                let dayDifference = 0;
-                                for (let d = new Date(baseDate); d < currentDate; d.setDate(d.getDate() + 1)) {
-                                    const day = d.getDay();
-                                    if (day !== 0 && day !== 6 && !isPublicHoliday(d)) {
-                                        dayDifference++;
-                                    }
-                                }
-
-                                const rotationIndex = dayDifference % vehicleOrder.length;
-                                
-                                if ((currentIndex - rotationIndex + vehicleOrder.length) % vehicleOrder.length === baseIndex) {
-                                    // 현재 날짜의 차량이 baseDate의 차량과 일치하는 경우에만 명단 사용
-                                    names = mostRecentRule.names;
-                                } else {
-                                    names = [{ text: '', bold: false }, { text: '', bold: false }];
-                                }
-                            }
+                            // 🚨 수정된 부분: 3614번 로테이션 로직 완전히 제거
                         }
                     }
                 }
@@ -892,5 +840,3 @@
     </script>
 </body>
 </html>
-
-
