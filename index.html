@@ -263,7 +263,7 @@
         <label for="yearInput">년도:</label>
         <input type="number" id="yearInput" value="2025">
         <label for="monthInput">월:</label>
-        <input type="number" id="monthInput" value="9" min="1" max="12" onchange="validateMonth(this)">
+        <input type="number" id="monthInput" value="9" onchange="validateMonth(this)">
         
         <input type="radio" id="option1" name="displayOption" value="1">
         <label for="option1">1일 ~ 15일</label>
@@ -354,6 +354,7 @@
             return days[dayOfWeek];
         }
 
+        // ✅ 수정됨: 연도 자동 변경 로직 적용 (min/max 제거됨)
         function validateMonth(input) {
             let val = parseInt(input.value);
             const yearInput = document.getElementById('yearInput');
